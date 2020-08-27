@@ -1,0 +1,410 @@
+---
+title: "MULTIVARIATE ANALYSIS - ASSIGNMENT - 01"
+author: "MADHUSUDHAN ASHWATH - 19203116"
+date: "2/29/2020"
+output: pdf_document
+---
+
+# Question 1
+
+**Load the Glass Data into working directory and few modifications for futher**
+
+```{r}
+glass = read.csv("C:/Users/Win10/Desktop/Glass.csv")
+
+#Setting seed to my student number
+set.seed(19203116)
+
+#Delete a row from the dataset by randomly generating a integer between 0 to n
+glass = glass[-floor(runif(1,min=0,max = nrow(glass))),]
+
+#number of observations
+o = nrow(glass)
+
+```
+
+
+## 1(a) i
+
+```{r}
+#Remove the group column and convert the dataset into matrix
+mat = as.matrix(glass[,-1])
+mat[,1]
+
+#Column means
+cbind(t(colMeans(mat)))
+mean_glass = matrix(data = 1, nrow = o) %*% cbind(t(colMeans(mat)))
+
+#Distance between datapoint from the mean
+dif = mat - mean_glass 
+
+#Covariance Matrix
+S = ((o-1)^-1) * t(dif) %*% dif
+rownames(S) = c()
+
+#Diagonal Element Matrix
+Dia = diag(apply(mat,2,sd))
+D = solve(Dia)
+
+#Correlation Matrix
+R = D %*% S %*% D
+
+#Correlation of data set
+R_cor = cor(mat)
+
+#Comparization of two matrix
+which(which(R == R_cor) == FALSE)
+```
+
+## 1(a)ii
+
+```{r}
+# Eigen vector and Eigen values of covariance matrix 
+eig = eigen(S)
+eigenvalue = eig$values
+eigenvector = as.matrix(eig$vectors)
+
+#First two eigen value and vector
+eigenvalue[1:2]
+eigenvector[,1:2]
+
+#Check for A.V = Lamda.V for first 2 values
+A_V1 = S %*% eigenvector[,1]
+A_V2 = S %*% eigenvector[,2]
+L1_V1= as.matrix(eigenvalue[1]*eigenvector[,1])
+L2_V2= as.matrix(eigenvalue[2]*eigenvector[,2])
+A_V1 == L1_V1
+A_V2 == L2_V2
+```
+
+## 1(a)iii
+
+```{r}
+#Two vector are orthogonal if product of the vector is zero.
+t(eigenvector[,1]) %*% eigenvector[,1]
+t(eigenvector[,1]) %*% eigenvector[,2]
+t(eigenvector[,2]) %*% eigenvector[,1]
+t(eigenvector[,2]) %*% eigenvector[,2]
+```
+
+## 1(a)iv
+
+```{r}
+#Variance of elements and Sumarised Plot
+var_glass<-apply(glass,2,var)
+scaled_glass<-scale(glass)
+scaled_var<-apply(scaled_glass,2,var)
+par( mfrow = c(1,2) )
+plot(var_glass,main = "Variance of each element",xlab = "Frequency",ylab = "Elements")
+plot(scaled_var,main ="ScaledVariance of each element",xlab = "Frequency",ylab = "Elements")
+
+```
+
+**Analysis : From the above graph we can see that values of elements are higher compaired to other elements, which may influence other elements, hence we standardise all the elements before we procude the analysis**
+
+
+## 1(b)i
+
+```{r}
+#Assigning Values to variables
+ex1=5
+varx1=6
+ex2=8
+varx2=7
+cov_x1x2=2.5
+
+#Expected value of x1-x2
+exp_val<-ex2-ex1
+exp_val
+
+#variance of x1 and x2
+var_x1x2<-varx1+varx2-2*cov_x1x2
+var_x1x2
+
+```
+
+## 1(b)ii
+
+```{r}
+#Calculate the Variance of U and V
+
+Var_U = ((-1*-1)*varx1)+((1*1)*varx2)-(2*cov_x1x2)
+Var_V = ((-2*-2)*varx1)+((1*1)*varx2)-(4*cov_x1x2)
+Var_U
+Var_V
+
+# Calculating the Correlation by dividing the Covariance with the square root of variance product
+cov_UV1<-varx2+2*varx1+(-2-1)*cov_x1x2
+cor_UV<-cov_UV1/sqrt(Var_U*Var_V)
+cor_UV
+
+```
+
+
+
+# Question 2
+
+## 2(a)
+
+**here we are using K=4 clusters, we are using 4 clusters as we observe through the elbow plot there is a sharp dip in the sum of square with the clusters at K=4**
+
+```{r}
+# set k to maximum
+K = 14
+# Applying Kmeans Cluster
+fitk = kmeans(glass,4)
+
+# Assign a dummy vector to wss
+wss = c()
+
+# Loop clusters for the dummy variable created and within cluster Sum of Square to the dummy variable
+
+for(K in 2:K)
+  wss[K] = sum (kmeans(glass,centers = K)$withinss)
+  
+  #Plot of SS for clustors
+  plot(1:K,wss,type = "b" , xlab = "Number of clusters" , ylab = "Average Distance")
+  
+
+```
+
+## 2(b)
+
+```{r}
+#Euclidean Distance between points 
+dis = dist(glass, method = "euclidean")
+khist = 4
+
+# Algorithm hierarchical clustering using average method
+fitavg = hclust(dis,method = "average")
+
+#Dendrogram
+plot(fitavg)
+
+#Cut the tree into 2 Clustor
+groupsavg = cutree(fitavg,khist)
+
+#Indicating the 2 clustors by drawint the border
+rect.hclust(fitavg,khist,border = "blue")
+table(groupsavg)
+
+# Algorithm hierarchical clustering using single method
+fitsin = hclust(dis,method = "single")
+
+#Dendrogram
+plot(fitsin)
+
+#Cut the tree into 2 Clustor
+groupssin = cutree(fitsin,khist)
+
+#Indicating the 2 clustors by drawint the border
+rect.hclust(fitsin,khist,border = "blue")
+table(groupssin)
+
+# Algorithm hierarchical clustering using Complete method
+fitcom = hclust(dis,method = "complete")
+
+#Dendrogram
+plot(fitcom)
+
+#Cut the tree into 2 Clustor
+groupscom = cutree(fitcom,khist)
+
+#Indicating the 2 clustors by drawint the border
+rect.hclust(fitcom,khist,border = "blue")
+table(groupscom)
+```
+
+**Analysis : We can see from the above 3 methods, once we cut the three all the three methods give the same result. As average method suits well we go ahead with this method**
+
+
+## 2(c)
+
+```{r}
+#Cross Tabulation
+library(e1071)
+cross_tab = table(groupsavg,fitk$cluster)
+classAgreement(cross_tab)
+
+#rand value for different K values
+#K=2
+groupsavg = cutree(fitavg, 2)
+tab_cross = table(groupsavg)
+fitk2 = kmeans(glass,2)
+table(groupsavg,fitk2$cluster)
+classAgreement(table(groupsavg,fitk2$cluster))
+
+#K=3
+groupsavg = cutree(fitavg, 3)
+tab_cross = table(groupsavg)
+fitk3 = kmeans(glass,3)
+table(groupsavg,fitk3$cluster)
+classAgreement(table(groupsavg,fitk3$cluster))
+
+```
+
+**If the rand value is close to 1 the data is clustered correctly**
+**Analysis : We can see that the value of rand is greater for K=2 when compared to K=3, so we can conclude K=2 clustering holds good**
+
+## 2(d)
+
+```{r}
+#Pairs plot on type of vessle
+#Symbols for different vessels group
+symbol = c(15,16,17,18)
+pairs(glass,gap =0,col = glass$Group,main ="Pairs plot",pch=symbol[glass$Group])
+```
+**Analysis : We can see that dataset consists a large of group 1 data in the overall data, so the distribution can be a partial distribution because of that. From the distrubution of the Pb0 variable and the groups we can see that the concentration of group2 is maximum when compared to the other vessel types**
+
+
+
+# Question 3
+
+```{r}
+#Load the library
+library(MASS)
+
+#Load the dataset.
+fgl_data<-fgl
+nrow(fgl_data)
+
+#Delete a row from the dataset by randomly generating a integer between 0 and n
+fgl_data<-fgl[-floor(runif(1,min=0,max = nrow(fgl))),]
+result <- data.frame(matrix(ncol = 7, nrow = 0))
+colnames(result) <- c("WinF","WinNF","Veh","Con","Tabl","Head","total_miss")
+
+# For loop for creating 100 iterations
+for(i in 1:100)
+  {
+# Set sample size as per provided formula
+Sample_Size <- floor(nrow(fgl_data)*(2/3))
+
+#sample the data
+train_samp <- sample(seq_len(nrow(fgl_data)), size = Sample_Size)
+
+#split the sample data into test and training sets
+train_set <- fgl_data[train_samp, ]
+test_set <- fgl_data[-train_samp, ]
+
+# LDA fucntion to calculate data mean and prior values
+lda_fgl<-lda(type~.,data = train_set)
+
+#Select the prior value for each group from the output
+prior<-lda_fgl$prior
+
+#mean value for each group from the output
+means <-lda_fgl$means
+
+# number of rows in the training data
+N <- nrow(train_set)
+
+#number of groups in the data
+G <- length(levels(train_set$type))
+
+#subset of the data based on the type variable values.
+fgl_data.WinF <- subset(train_set,type== "WinF")
+fgl_data.WinNF <- subset(train_set,type== "WinNF")
+fgl_data.Veh <- subset(train_set,type== "Veh")
+fgl_data.Con <- subset(train_set,type== "Con")
+fgl_data.Tabl <- subset(train_set,type== "Tabl")
+fgl_data.Head <- subset(train_set,type== "Head")
+
+#covariance of each dataset 
+cov_WinF <-cov(fgl_data.WinF[1:9])
+cov_WinNF <-cov(fgl_data.WinNF[1:9])
+cov_Veh <-cov(fgl_data.Veh[1:9])
+cov_Con <-cov(fgl_data.Con[1:9])
+cov_Tabl <-cov(fgl_data.Tabl[1:9])
+cov_Head <-cov(fgl_data.Head[1:9])
+
+# total variance
+cov_total<-((cov_WinF*(nrow(fgl_data.WinF)-1))+
+(cov_WinNF*(nrow(fgl_data.WinNF)-1))+(cov_Veh*(nrow(fgl_data.Veh)-1))+
+(cov_Con*(nrow(fgl_data.Con)-1))+
+(cov_Tabl*(nrow(fgl_data.Tabl)-1))+(cov_Head*(nrow(fgl_data.Head)-1)))/(N - G)
+
+#linear discriminant function
+ldf <- function(ti, priori, mu, covar1)
+{
+
+  #Checks if observation is in correct format
+ti <- matrix(as.numeric(ti),ncol=1)
+log(priori)-(0.5*t(mu) %*% solve(covar1) %*% mu) + (t(ti) %*% (solve(covar1) %*% mu))
+}
+
+# initialize the vectors for holding the values
+dfs <-rep(0,G)
+test_grp<-rep(0,1)
+
+# Iterative loop for test data
+for(v in 1:nrow(test_set))
+  {
+  # For loop for different groups in the data
+for(g in 1:G) 
+  {
+  #Call the ldf function and store the output
+dfs[g] <- ldf(t(as.matrix(test_set[v,1:9])), prior[g], means[g,], cov_total)
+}
+
+  #Store the value for each observation class data
+test_grp[v]<-levels(test_set$type)[dfs == max(dfs)]
+}
+
+#Order the data for correct tabulation of results
+test_grp1<-ordered(test_grp,levels=c("WinF","WinNF","Veh","Con","Tabl","Head"))
+
+#Tabulate the results for test data and test LDA values
+tab_class<- table(test_set$type,test_grp1)
+
+# number of instances
+n = sum(tab_class)
+
+# number of classes
+nc = nrow(tab_class)
+
+# number of correctly classified instances per class
+diag = diag(tab_class)
+
+# number of instances per class
+rowsums = apply(tab_class, 1, sum)
+
+# number of predictions per class
+colsums = apply(tab_class, 2, sum)
+
+# distribution of instances over the actual classes
+p = rowsums / n
+
+# distribution of instances over the predicted classes
+q = colsums / n
+
+# calculate the values for missclassification per class
+miss_class <- (1- diag / colsums)
+
+# Calculate the values for total missclassification
+total_miss <- 1-sum(diag(tab_class))/sum(tab_class)
+
+# bind the miss_class and total_miss values
+miss_class<-cbind(t(miss_class),total_miss)
+
+# Attach the values to the result dataframe
+result<-rbind(result,miss_class)
+}
+
+# Plot the missclassification results of all the class and total missclassification rates
+matplot(rownames(result), result, type='l', xlab='Observation',ylab='Missclassification Rate', col=1:7)
+legend('bottomright', legend=colnames(result),pch=1, col=1:7)
+
+# average overall missclassification rates
+class_error_avg<- mean(result$total_miss)
+print("Average overall missclassification rate :- ")
+cat(class_error_avg)
+
+```
+
+
+# Question 4
+
+![Question 4](C:\Users\Win10\Desktop\MadhuSudhan_Ashwath_Question4)
+
+
+
